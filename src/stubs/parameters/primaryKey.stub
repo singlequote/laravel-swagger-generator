@@ -1,0 +1,9 @@
+
+        -
+         name: <primary>
+         in: path
+         description: 'Unique id of <resource>'
+         required: true
+         schema:
+          type: <type>
+          format: <format>

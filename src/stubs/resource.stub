@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: 'Swagger generated'
+  description: |-
+        ...
+  version: 0.0.1
+servers:
+  -
+    url: '/'
+    description: 'Current'
+paths:
+  <paths>
+  
+
+components:
+  schemas:
+<schemas>

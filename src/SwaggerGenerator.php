@@ -1,8 +1,7 @@
 <?php
-namespace SingleQuote\SwaggerGenerator;
 
+namespace SingleQuote\SwaggerGenerator;
 
 class SwaggerGenerator
 {
-    
 }

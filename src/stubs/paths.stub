@@ -1,0 +1,9 @@
+
+    <method>:
+      tags:
+        - Collection Invoices
+      operationId: <method><resourceCamel><type>
+<requestBody>
+<parameters>
+
+<responses>

@@ -1,0 +1,12 @@
+
+        -
+         name: <name>[]
+         in: query
+         description: '<description>'
+         required: <required>
+         schema:
+          type: array
+          items:
+            format: <format>
+            type: <type>
+            default: <default>

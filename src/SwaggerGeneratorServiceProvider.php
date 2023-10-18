@@ -1,4 +1,5 @@
 <?php
+
 namespace SingleQuote\SwaggerGenerator;
 
 use Illuminate\Support\ServiceProvider;
@@ -6,7 +7,6 @@ use SingleQuote\SwaggerGenerator\Commands\Make;
 
 class SwaggerGeneratorServiceProvider extends ServiceProvider
 {
-
     /**
      * Commands.
      *
@@ -16,7 +16,7 @@ class SwaggerGeneratorServiceProvider extends ServiceProvider
         Make::class,
     ];
 
-    
+
     /**
      * Bootstrap the application services.
      */
@@ -42,7 +42,7 @@ class SwaggerGeneratorServiceProvider extends ServiceProvider
             'driver' => 'local',
             'root' => config('model-seeder.paths.lang_folder'),
         ];
-                
+
         $this->commands($this->commands);
     }
 }

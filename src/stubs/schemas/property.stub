@@ -1,0 +1,6 @@
+        <name>:
+          type: <type>
+          format: <format>
+          description: '<description>'
+          nullable: <nullable>
+          default: <default>
