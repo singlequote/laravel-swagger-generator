@@ -13,6 +13,12 @@ Create swagger yaml docs based on laravel API routes and FormRequests
 composer require singlequote/laravel-swagger-generator --dev
 ```
 
+### Publish
+Publish the config file
+```console
+php artisan vendor:publish --tag=laravel-swagger-generator
+```
+
 ### Usage
 
 ```bahs
