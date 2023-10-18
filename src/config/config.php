@@ -10,7 +10,7 @@ return [
     /**
      * The relative path from your root to the location where the files will be generated
      */
-    'title' => "XPlanner Api Documentation",
+    'title' => "Generated with Laravel Swagger Generator",
 
     /**
      * The relative path from your root to the location where the files will be generated
@@ -21,7 +21,7 @@ return [
      * These columns will be excluded from your seeders
      */
     'exclude_resources' => [
-        'iframing'
+
     ],
 
 
