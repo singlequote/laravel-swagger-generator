@@ -53,7 +53,7 @@ class RetrieveFilesByParent
                 ->before('.php')
                 ->value();
 
-            if (class_exists("$className")) {
+            if (class_exists(ucFirst("$className"))) {
                 $reflection = new ReflectionClass($className);
                 return $reflection->isSubclassOf($parent);
             }

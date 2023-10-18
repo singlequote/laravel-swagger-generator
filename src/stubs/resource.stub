@@ -1,17 +1,21 @@
 openapi: 3.0.0
 info:
-  title: 'Swagger generated'
+  title: '<title>'
   description: |-
         ...
-  version: 0.0.1
+  version: <version>
 servers:
   -
     url: '/'
     description: 'Current'
+security:
+  - BearerAuth: []
 paths:
   <paths>
   
 
 components:
+  securitySchemes:
+<securitySchemes>
   schemas:
 <schemas>

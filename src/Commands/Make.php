@@ -24,7 +24,7 @@ class Make extends Command
     /**
      * @var  string
      */
-    protected $signature = 'swagger:generate';
+    protected $signature = 'swagger:generate {--f}';
 
     /**
      * @var  string
@@ -54,12 +54,27 @@ class Make extends Command
     /**
      * @var string
      */
-    protected string $prefixName = 'api.invoices';
+    protected string $prefixName = 'api';
 
     /**
-     * @var string|null
+     * @var string
      */
-    protected string $outputPath = "Modules/Api/resources/docs";
+    protected string $outputPath = "docs";
+
+    /**
+     * @var string
+     */
+    protected string $version = "1.0.0";
+
+    /**
+     * @var string
+     */
+    protected string $title = "Generated with Laravel Swagger Generator";
+
+    /**
+     * @var bool
+     */
+    protected bool $storeAsSeperateFiles = false;
 
     /**
      * @param PrimaryKeyParameter $primaryKeyParameter
@@ -83,6 +98,8 @@ class Make extends Command
      */
     public function handle(): void
     {
+        $this->storeAsSeperateFiles = $this->confirm("Would you like to store the yaml files seperated by resource?", $this->storeAsSeperateFiles);
+
         $prefix = $this->ask("What is the API prefix", $this->prefixName);
 
         $this->prefixName = str($prefix)->endsWith('.') ? $prefix : "$prefix.";
@@ -94,14 +111,35 @@ class Make extends Command
 
         $this->requests = $this->retrieveFilesByParent->handle(FormRequest::class);
 
-        $this->outputPath = $this->ask("Where do you want to store the generated files? Please use a relative path form the root", $this->outputPath);
-        $this->extractResourceRoutes();
+        $this->finishUp();
     }
 
     /**
      * @return void
      */
-    private function preBuildYamlFiles(): void
+    private function finishUp(): void
+    {
+        $this->extractResourceRoutes();
+
+        if (!File::isDirectory(config('laravel-swagger-generator.output_path'))) {
+            File::makeDirectory(config('laravel-swagger-generator.output_path'));
+        }
+
+        if($this->storeAsSeperateFiles) {
+            $this->storeAsSeperatedFiles();
+        } else {
+            $this->storeAsSingleFile();
+        }
+        $this->line('');
+        $this->line('================================================');
+
+        $this->info("Successfull imported all selected api routes!");
+    }
+
+    /**
+     * @return void
+     */
+    private function storeAsSeperatedFiles(): void
     {
         $bar = $this->output->createProgressBar(count($this->parsed));
         $bar->start();
@@ -109,8 +147,7 @@ class Make extends Command
         foreach ($this->parsed as $resource => $routes) {
             $stubFile = __DIR__ . "/../stubs/resource.stub";
             $content = str(File::get($stubFile));
-            $schemas = "";
-            $paths = "";
+            $schemas = $paths = "";
 
             foreach ($routes as $url => $route) {
                 $paths .= $this->parseResourceFile($resource, $url, $route);
@@ -118,18 +155,61 @@ class Make extends Command
             }
 
             $replaced = $content->replace("<schemas>", $schemas)
-                ->replace('<paths>', $paths);
+                ->replace(['<version>', '<title>'], [config('laravel-swagger-generator.version'), config('laravel-swagger-generator.title')])
+                ->replace(['<securitySchemes>', '<paths>'], [$this->extractSecurity(), $paths]);
 
-            if (!File::isDirectory($this->outputPath)) {
-                File::makeDirectory($this->outputPath);
-            }
+            $outputPath = config('laravel-swagger-generator.output_path');
 
-            File::put("$this->outputPath/{$resource}.yaml", $replaced);
+            File::put("$outputPath/{$resource}.yaml", $replaced);
 
             $bar->advance();
         }
 
         $bar->finish();
+    }
+
+    /**
+     * @return void
+     */
+    private function storeAsSingleFile(): void
+    {
+        $bar = $this->output->createProgressBar(count($this->parsed));
+        $bar->start();
+
+        $stubFile = __DIR__ . "/../stubs/resource.stub";
+        $content = str(File::get($stubFile));
+        $schemas = $paths = "";
+
+        foreach ($this->parsed as $resource => $routes) {
+            foreach ($routes as $url => $route) {
+                $paths .= $this->parseResourceFile($resource, $url, $route);
+                $schemas .= $this->extractSchema($resource, $route);
+            }
+            $bar->advance();
+        }
+
+        $replaced = $content->replace("<schemas>", $schemas)
+            ->replace('<securitySchemes>', $this->extractSecurity())
+            ->replace(['<version>', '<title>'], [config('laravel-swagger-generator.version'), config('laravel-swagger-generator.title')])
+            ->replace('<paths>', $paths);
+
+        $outputPath = config('laravel-swagger-generator.output_path');
+
+        File::put("$outputPath/index.yaml", $replaced);
+
+        $bar->finish();
+    }
+
+    /**
+     * @param string $resource
+     * @param array $routes
+     * @return string
+     */
+    private function extractSecurity(): string
+    {
+        $stubFile = __DIR__ . "/../stubs/security-schemes.stub";
+
+        return str(File::get($stubFile));
     }
 
     /**
@@ -246,17 +326,14 @@ class Make extends Command
     {
         $this->routes->each(function ($routes, $group) {
 
-            if (!$this->confirm("Route group $group found, would you like to import it?", true)) {
+            if(in_array($group, config('laravel-swagger-generator.exclude_resources'))) {
                 return true;
             }
 
+            //            if (!$this->confirm("Route group $group found, would you like to import it?", true)) {
+            //                return true;
+            //            }
             $this->resolveRequiredData($group, $routes);
-
-            $this->preBuildYamlFiles();
-
-            $this->parsed = [];
-
-            $this->line("$group imported.....");
         });
     }
 
@@ -269,9 +346,11 @@ class Make extends Command
     {
         $resource = str($group)->camel()->ucfirst();
 
-        $requests = collect($this->requests)->filter(function ($request) use ($resource) {
-            return str($request)->contains($resource->singular()->value());
-        })->prepend("Don't use a request");
+        $predictedName = $resource->singular()->value();
+
+        $requests = collect($this->requests)->filter(function ($request) use ($predictedName) {
+            return str($request)->contains($predictedName);
+        })->prepend("Don't use a request class");
 
         $model = $this->extractModel($resource);
 
@@ -280,7 +359,7 @@ class Make extends Command
             $request = $this->findRequestByName($requests, $resource, $route);
 
             if (!$request) {
-                $request = $this->choice("Please select the request file for {$route->getName()}", $requests->values()->toArray(), 0);
+                $request = $this->option('f') ? $requests->first() : $this->choice("Please select the request file for {$route->getName()} - $predictedName", $requests->values()->toArray(), 0);
             }
 
             $rules = class_exists($request) ? (new $request())->rules() : [];
@@ -328,6 +407,13 @@ class Make extends Command
             return $possible->first();
         }
 
+        if ($possible->isEmpty()) {
+            return null;
+        }
+        if ($this->option('f')) {
+            return $possible->first();
+        }
+
         return $this->choice("Which model should i use for the resource $resource?", $possible->values()->toArray(), 0);
     }
 
@@ -339,46 +425,21 @@ class Make extends Command
      */
     private function findRequestByName(Collection $requests, Stringable $resource, Route2 $route): ?string
     {
-        $routeName = str($route->getName())->afterLast('.')->ucFirst()->value();
+        $routeName = str($route->getName())->camel()->afterLast('.')->ucFirst()->value();
         $resourceName = $resource->singular()->value();
 
         $shouldNamed = "{$routeName}{$resourceName}Request";
 
-        return $requests->firstWhere(function ($request) use ($shouldNamed) {
+        $requestsFound = $requests->firstWhere(function ($request) use ($shouldNamed) {
             return str($request)->endsWith($shouldNamed);
         });
+
+        if(! $requestsFound && ! $this->option('f')) {
+            $this->error("Could not found a request file named $shouldNamed");
+        }
+
+        return $requestsFound;
     }
-    //
-    //    /**
-    //     * @param SplFileInfo $file
-    //     * @return array
-    //     */
-    //    private function extractClassInfo(SplFileInfo $file): array
-    //    {
-    //        $data = [
-    //            'basePath' => $file->getPathname(),
-    //            'relativePath' => $file->getPath(),
-    //        ];
-    //        $content = $file->getContents();
-    //
-    //        $lines = preg_split('/\r\n|\r|\n/', $content);
-    //
-    //        foreach ($lines as $line) {
-    //
-    //            if (str($line)->startsWith('namespace')) {
-    //                $data['namespace'] = str($line)->after('namespace ')->before(';')->toString();
-    //            }
-    //            if (str($line)->startsWith('class')) {
-    //                $data['model'] = str($line)->after('class ')->before(' ')->toString();
-    //            }
-    //            if (str($line)->startsWith('final class')) {
-    //                $data['model'] = str($line)->after('final class ')->before(' ')->toString();
-    //            }
-    //        }
-    //
-    //
-    //        return $data;
-    //    }
 
     /**
      * @return void
@@ -398,7 +459,6 @@ class Make extends Command
         $routes = Route::getRoutes();
 
         foreach ($routes->getRoutesByName() as $name => $route) {
-
             if (str($name)->startsWith($this->prefixName)) {
                 $this->routeKeys[$name] = $route;
             }

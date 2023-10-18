@@ -32,9 +32,6 @@ class RequestRules
     {
         $content = "";
 
-        $stubRule = File::get(__DIR__ . "/../stubs/parameters/rule.stub");
-        $stubRuleArray = File::get(__DIR__ . "/../stubs/parameters/rule-array.stub");
-
         foreach ($route['rules'] as $key => $rule) {
 
             $rules = is_array($rule) ? $rule : explode('|', $rule);
@@ -44,26 +41,29 @@ class RequestRules
             }
 
             if (str($key)->contains('*')) {
-                $content .= $this->parseArrayRule($stubRuleArray, $key, $rules);
+                $content .= $this->parseArrayRule($key, $rules);
+                continue;
             }
 
-            if (!str($key)->contains('*')) {
-                $content .= $this->parseSingleRule($stubRule, $key, $rules);
+            if(str($rule)->prepend('|')->contains('|in:')) {
+                $content .= $this->parseEnum($key, $rules);
+                continue;
             }
+
+            $content .= $this->parseSingleRule($key, $rules);
         }
 
         return $content;
     }
 
     /**
-     * @param string $stubRuleArray
      * @param string $key
      * @param array $rules
      * @return string
      */
-    private function parseArrayRule(string $stubRuleArray, string $key, array $rules): string
+    private function parseArrayRule(string $key, array $rules): string
     {
-        return str($stubRuleArray)
+        return str(File::get(__DIR__ . "/../stubs/parameters/rule-array.stub"))
                 ->replace('<name>', str($key)->before('.'))
                 ->replace('<required>', in_array('required', $rules))
                 ->replace('<type>', in_array('string', $rules) ? 'string' : 'int')
@@ -73,19 +73,37 @@ class RequestRules
     }
 
     /**
-     * @param string $stubRule
      * @param string $key
      * @param array $rules
      * @return string
      */
-    private function parseSingleRule(string $stubRule, string $key, array $rules): string
+    private function parseSingleRule(string $key, array $rules): string
     {
-        return str($stubRule)
+        return str(File::get(__DIR__ . "/../stubs/parameters/rule.stub"))
                 ->replace('<name>', $key)
                 ->replace('<required>', in_array('required', $rules))
                 ->replace('<type>', in_array('string', $rules) ? 'string' : 'int')
                 ->replace('<format>', $this->parseFormat($key, $rules))
                 ->replace('<description>', $this->parseDescription($key, $rules))
+                ->replace('<default>', $this->getDefault($key, $rules));
+    }
+
+    /**
+     * @param string $key
+     * @param array $rules
+     * @return string
+     */
+    private function parseEnum(string $key, array $rules): string
+    {
+        $ruleLine = str(implode('|', $rules))->prepend('|');
+
+        return str(File::get(__DIR__ . "/../stubs/parameters/enum.stub"))
+                ->replace('<name>', $key)
+                ->replace('<required>', in_array('required', $rules))
+                ->replace('<type>', in_array('string', $rules) ? 'string' : 'int')
+                ->replace('<format>', $this->parseFormat($key, $rules))
+                ->replace('<description>', $this->parseDescription($key, $rules))
+                ->replace('<enums>', $ruleLine->betweenFirst('|in:', "|"))
                 ->replace('<default>', $this->getDefault($key, $rules));
     }
 

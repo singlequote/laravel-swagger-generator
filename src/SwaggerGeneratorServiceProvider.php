@@ -23,8 +23,8 @@ class SwaggerGeneratorServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__.'/config/config.php' => config_path('model-seeder.php')
-        ], 'model-seeder');
+            __DIR__.'/config/config.php' => config_path('laravel-swagger-generator.php')
+        ], 'laravel-swagger-generator');
     }
 
     /**
@@ -35,13 +35,8 @@ class SwaggerGeneratorServiceProvider extends ServiceProvider
         //config
         $this->mergeConfigFrom(
             __DIR__ . '/config/config.php',
-            'model-seeder'
+            'laravel-swagger-generator'
         );
-
-        app()->config["filesystems.disks.SwaggerGenerator"] = [
-            'driver' => 'local',
-            'root' => config('model-seeder.paths.lang_folder'),
-        ];
 
         $this->commands($this->commands);
     }
