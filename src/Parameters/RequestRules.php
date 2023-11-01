@@ -34,6 +34,7 @@ class RequestRules
 
         foreach ($route['rules'] as $key => $rule) {
 
+            $ruleLine = is_array($rule) ? implode('|', $rule) : $rule;
             $rules = is_array($rule) ? $rule : explode('|', $rule);
 
             if (in_array('array', $rules)) {
@@ -45,7 +46,7 @@ class RequestRules
                 continue;
             }
 
-            if(str($rule)->prepend('|')->contains('|in:')) {
+            if(str($ruleLine)->prepend('|')->contains('|in:')) {
                 $content .= $this->parseEnum($key, $rules);
                 continue;
             }

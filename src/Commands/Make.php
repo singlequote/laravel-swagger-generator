@@ -59,12 +59,7 @@ class Make extends Command
     /**
      * @var string
      */
-    protected string $outputPath = "docs";
-
-    /**
-     * @var string
-     */
-    protected string $version = "1.0.0";
+    protected string $fileName = "index";
 
     /**
      * @var string
@@ -128,6 +123,9 @@ class Make extends Command
         if($this->storeAsSeperateFiles) {
             $this->storeAsSeperatedFiles();
         } else {
+
+            $this->fileName = $this->ask("Save generated file as", $this->fileName);
+
             $this->storeAsSingleFile();
         }
         $this->line('');
@@ -195,7 +193,7 @@ class Make extends Command
 
         $outputPath = config('laravel-swagger-generator.output_path');
 
-        File::put("$outputPath/index.yaml", $replaced);
+        File::put("$outputPath/$this->fileName.yaml", $replaced);
 
         $bar->finish();
     }

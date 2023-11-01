@@ -48,25 +48,32 @@ class RetrieveFilesByParent
     public function byFolder(string $folder, string $parent): array
     {
         $models = collect(File::allFiles($folder))->filter(function ($class) use ($parent) {
-            $className = str($class->getPathName())
-                ->after(base_path('\\'))
-                ->before('.php')
-                ->value();
+            $className = $this->transFormClassName($class->getPathName());
 
-            if (class_exists(ucFirst("$className"))) {
+            if (class_exists("$className")) {
                 $reflection = new ReflectionClass($className);
                 return $reflection->isSubclassOf($parent);
             }
         })->map(function ($class) {
-
-            $className = str($class->getPathName())
-                ->after(base_path('\\'))
-                ->before('.php')
-                ->value();
-
-            return $className;
+            return $this->transFormClassName($class->getPathName());
         });
 
         return $models->values()->toArray();
+    }
+
+    /**
+     * @param string $className
+     * @return string
+     */
+    private function transFormClassName(string $className): string
+    {
+        return str($className)
+                ->after(base_path(''))
+                ->before('.php')
+                ->ltrim('/')
+                ->ltrim('\\')
+                ->replace('/', '\\')
+                ->ucFirst()
+                ->value();
     }
 }
