@@ -46,7 +46,7 @@ class RequestRules
                 continue;
             }
 
-            if(str($ruleLine)->prepend('|')->contains('|in:')) {
+            if (str($ruleLine)->prepend('|')->contains('|in:')) {
                 $content .= $this->parseEnum($key, $rules);
                 continue;
             }
@@ -66,7 +66,7 @@ class RequestRules
     {
         return str(File::get(__DIR__ . "/../stubs/parameters/rule-array.stub"))
                 ->replace('<name>', str($key)->before('.'))
-                ->replace('<required>', in_array('required', $rules))
+                ->replace('<required>', !str($key)->contains('*') && in_array('required', $rules))
                 ->replace('<type>', in_array('string', $rules) ? 'string' : 'int')
                 ->replace('<description>', $this->parseDescription(str($key)->before('.'), $rules))
                 ->replace('<format>', 'format')
@@ -173,6 +173,6 @@ class RequestRules
             return '';
         }
 
-        return null;
+        return '';
     }
 }
