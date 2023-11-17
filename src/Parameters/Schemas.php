@@ -23,7 +23,11 @@ class Schemas
 
     }
 
-
+    /**
+     * @param string $resource
+     * @param array $routes
+     * @return string
+     */
     public function handle(string $resource, array $routes): string
     {
         $content = "";
@@ -32,7 +36,6 @@ class Schemas
 
 
         foreach($routes as $key => $route) {
-
             if(count($route['rules']) === 0) {
                 continue;
             }
@@ -43,10 +46,15 @@ class Schemas
                 ->replace("<resourceCamel>", str($resource)->camel()->ucFirst())
                 ->replace('<properties>', $this->extractProperties($resource, $route));
         }
-
+        
         return $content;
     }
-
+    
+    /**
+     * @param string $resource
+     * @param array $route
+     * @return string
+     */
     private function extractProperties(string $resource, array $route): string
     {
         $content = "";
@@ -78,7 +86,7 @@ class Schemas
         return str($stubRule)
                 ->replace('<name>', $key)
                 ->replace('<nullable>', in_array('nullable', $rules) ? 'true' : 'false')
-                ->replace('<type>', in_array('string', $rules) ? 'string' : 'int')
+                ->replace('<type>', $this->parseType($key, $rules))
                 ->replace('<format>', $this->parseFormat($key, $rules))
                 ->replace('<description>', $this->parseDescription($key, $rules))
                 ->replace('<default>', $this->getDefault($key, $rules));
@@ -92,6 +100,32 @@ class Schemas
     private function parseFormat(string $key, array $rules): string
     {
         if (in_array('string', $rules)) {
+            return 'string';
+        }
+        
+        if (in_array('uuid', $rules)) {
+            return 'uuid';
+        }
+
+        if (in_array('int', $rules)) {
+            return 'int';
+        }
+
+        return "string";
+    }
+
+    /**
+     * @param string $key
+     * @param array $rules
+     * @return string
+     */
+    private function parseType(string $key, array $rules): string
+    {
+        if (in_array('string', $rules)) {
+            return 'string';
+        }
+        
+        if (in_array('uuid', $rules)) {
             return 'string';
         }
 
