@@ -29,11 +29,7 @@ class RequestRules
      */
     public function handle(string $resource, array $route): string
     {
-        $content = "";
-
-        if (in_array($route['method'], ['post', 'put', 'patch'])) {
-            return $content;
-        }
+        $content = "";        
 
         foreach ($route['rules'] as $key => $rule) {
 
