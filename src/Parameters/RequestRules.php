@@ -1,10 +1,8 @@
 <?php
-
 namespace SingleQuote\SwaggerGenerator\Parameters;
 
 use Illuminate\Support\Facades\File;
 use SingleQuote\SwaggerGenerator\Actions\RetrieveFilesByParent;
-
 use function collect;
 use function str;
 
@@ -15,12 +13,13 @@ use function str;
  */
 class RequestRules
 {
+
     /**
      * @param RetrieveFilesByParent $retrieveFilesByParent
      */
     public function __construct(protected RetrieveFilesByParent $retrieveFilesByParent)
     {
-
+        
     }
 
     /**
@@ -31,6 +30,10 @@ class RequestRules
     public function handle(string $resource, array $route): string
     {
         $content = "";
+
+        if (in_array($route['method'], ['post', 'put', 'patch'])) {
+            return $content;
+        }
 
         foreach ($route['rules'] as $key => $rule) {
 
@@ -141,8 +144,8 @@ class RequestRules
 
         if ($ruleLine->containsAll(['|min:', '|max:'])) {
             return collect($rules)->filter(function ($rule) {
-                return str($rule)->contains(['min:', 'max:']);
-            })->implode(' | ');
+                    return str($rule)->contains(['min:', 'max:']);
+                })->implode(' | ');
         }
 
         return "Filter by $key";
