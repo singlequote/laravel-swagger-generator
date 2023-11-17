@@ -260,6 +260,10 @@ class Make extends Command
      */
     private function extractParameters(string $resource, array $route): string
     {
+        if (in_array($route['method'], ['post', 'put', 'patch'])) {
+            return "";
+        }
+        
         $stubFile = __DIR__ . "/../stubs/parameters.stub";
         $content = str(File::get($stubFile));
         $parameters = "";
@@ -363,7 +367,7 @@ class Make extends Command
             $rules = class_exists($request) ? (new $request())->rules() : [];
 
             $method = str($route->methods()[0])->lower()->value();
-
+          
             $this->parsed[$group][$route->uri()][$method] = [
                 'url' => $route->uri(),
                 'model' => $model,
@@ -382,10 +386,13 @@ class Make extends Command
     {
         $primaryKey = str($resource)->singular()->replace('-', '_')->toString();
         $modelName = str($primaryKey)->singular()->camel()->ucFirst();
-
+        
+        
         $models = $this->retrieveFilesByParent->handle(Model::class);
         $modelClass = $this->findModelsByName($resource, $models, $modelName);
-
+        
+        
+        
         return $modelClass ? new $modelClass() : null;
     }
 
