@@ -36,10 +36,11 @@ class Schemas
 
 
         foreach($routes as $key => $route) {
+                        
             if(count($route['rules']) === 0) {
                 continue;
             }
-
+            
             $content .= str($stubFile)
                 ->replace('<type>', $route['type'])
                 ->replace('<method>', $route['method'])
@@ -66,7 +67,7 @@ class Schemas
             if(! in_array($key, $fillables)) {
                 continue;
             }
-
+                        
             $rules = is_array($rule) ? $rule : explode('|', $rule);
 
             $content .= $this->parseSingleRule($stubFile, $key, $rules);
@@ -111,6 +112,10 @@ class Schemas
             return 'int';
         }
 
+        if (in_array('boolean', $rules)) {
+            return 'boolean';
+        }
+
         return "string";
     }
 
@@ -131,6 +136,10 @@ class Schemas
 
         if (in_array('int', $rules)) {
             return 'int';
+        }
+
+        if (in_array('boolean', $rules)) {
+            return 'boolean';
         }
 
         return "string";
