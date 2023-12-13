@@ -1,5 +1,4 @@
 <?php
-
 namespace SingleQuote\SwaggerGenerator\Commands;
 
 use Illuminate\Console\Command;
@@ -15,12 +14,13 @@ use SingleQuote\SwaggerGenerator\Parameters\PrimaryKeyParameter;
 use SingleQuote\SwaggerGenerator\Parameters\RequestRules;
 use SingleQuote\SwaggerGenerator\Parameters\Schemas;
 use SingleQuote\SwaggerGenerator\Responses\ResponseAsJson;
-
 use function collect;
+use function config;
 use function str;
 
 class Make extends Command
 {
+
     /**
      * @var  string
      */
@@ -54,7 +54,7 @@ class Make extends Command
     /**
      * @var string
      */
-    protected string $prefixName = 'api';
+    protected string $prefixName = 'api.';
 
     /**
      * @var string
@@ -84,7 +84,8 @@ class Make extends Command
         protected Schemas $schemas,
         protected ResponseAsJson $responseAsJson,
         protected RetrieveFilesByParent $retrieveFilesByParent,
-    ) {
+    )
+    {
         parent::__construct();
     }
 
@@ -120,7 +121,7 @@ class Make extends Command
             File::makeDirectory(config('laravel-swagger-generator.output_path'));
         }
 
-        if($this->storeAsSeperateFiles) {
+        if ($this->storeAsSeperateFiles) {
             $this->storeAsSeperatedFiles();
         } else {
 
@@ -260,21 +261,19 @@ class Make extends Command
      */
     private function extractParameters(string $resource, array $route): string
     {
-        if (in_array($route['method'], ['post', 'put', 'patch'])) {
-            return "";
-        }
-        
         $stubFile = __DIR__ . "/../stubs/parameters.stub";
         $content = str(File::get($stubFile));
         $parameters = "";
 
         $model = str($resource)->singular()->replace('-', '_')->toString();
 
-        if (str($route['url'])->contains("{{$model}}")) {
-            $parameters .= $this->primaryKeyParameter->handle($resource, $route);
+        if (str($route['url'])->contains("{") && str($route['url'])->contains("}")) {
+            $parameters .= $this->primaryKeyParameter->handle($model, $resource, $route);
         }
 
-        $parameters .= $this->requestRules->handle($resource, $route);
+        if (!in_array($route['method'], ['post', 'put', 'patch'])) {
+            $parameters .= $this->requestRules->handle($resource, $route);
+        }
 
         return $content->replace('<parameters>', $parameters);
     }
@@ -328,13 +327,10 @@ class Make extends Command
     {
         $this->routes->each(function ($routes, $group) {
 
-            if(in_array($group, config('laravel-swagger-generator.exclude_resources'))) {
+            if (in_array($group, config('laravel-swagger-generator.exclude_resources'))) {
                 return true;
             }
 
-            //            if (!$this->confirm("Route group $group found, would you like to import it?", true)) {
-            //                return true;
-            //            }
             $this->resolveRequiredData($group, $routes);
         });
     }
@@ -351,8 +347,8 @@ class Make extends Command
         $predictedName = $resource->singular()->value();
 
         $requests = collect($this->requests)->filter(function ($request) use ($predictedName) {
-            return str($request)->contains($predictedName);
-        })->prepend("Don't use a request class");
+                return str($request)->contains($predictedName);
+            })->prepend("Don't use a request class");
 
         $model = $this->extractModel($resource);
 
@@ -367,7 +363,7 @@ class Make extends Command
             $rules = class_exists($request) ? (new $request())->rules() : [];
 
             $method = str($route->methods()[0])->lower()->value();
-          
+
             $this->parsed[$group][$route->uri()][$method] = [
                 'url' => $route->uri(),
                 'model' => $model,
@@ -386,13 +382,10 @@ class Make extends Command
     {
         $primaryKey = str($resource)->singular()->replace('-', '_')->toString();
         $modelName = str($primaryKey)->singular()->camel()->ucFirst();
-        
-        
+
         $models = $this->retrieveFilesByParent->handle(Model::class);
         $modelClass = $this->findModelsByName($resource, $models, $modelName);
-        
-        
-        
+
         return $modelClass ? new $modelClass() : null;
     }
 
@@ -439,7 +432,7 @@ class Make extends Command
             return str($request)->endsWith($shouldNamed);
         });
 
-        if(! $requestsFound && ! $this->option('f')) {
+        if (!$requestsFound && !$this->option('f')) {
             $this->error("Could not found a request file named $shouldNamed");
         }
 
