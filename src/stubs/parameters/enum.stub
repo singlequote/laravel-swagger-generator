@@ -1,6 +1,6 @@
 
         -
-         name: <name>[]
+         name: <name>
          in: query
          description: '<description>'
          required: <required>
