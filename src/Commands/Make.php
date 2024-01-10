@@ -24,7 +24,7 @@ class Make extends Command
     /**
      * @var  string
      */
-    protected $signature = 'swagger:generate {--f}';
+    protected $signature = 'swagger:generate {--f} {--skip-missing}';
 
     /**
      * @var  string
@@ -356,7 +356,7 @@ class Make extends Command
 
             $request = $this->findRequestByName($requests, $resource, $route);
 
-            if (!$request) {
+            if (!$request && !$this->option('skip-missing')) {
                 $request = $this->option('f') ? $requests->first() : $this->choice("Please select the request file for {$route->getName()} - $predictedName", $requests->values()->toArray(), 0);
             }
 
@@ -432,7 +432,7 @@ class Make extends Command
             return str($request)->endsWith($shouldNamed);
         });
 
-        if (!$requestsFound && !$this->option('f')) {
+        if (!$requestsFound && !$this->option('f') && !$this->option('skip-missing')) {
             $this->error("Could not found a request file named $shouldNamed");
         }
 
